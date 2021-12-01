@@ -1,11 +1,11 @@
 #!/bin/bash
-# creator - harneet.singh
+# creator - harneet.singh@mail.com
 # date - 20 Nov 2021
 # checks for FATWIRE and Genreic Server Error
-set -x
+#set -x
 
 #### Variables ##################
-servers=(server1 server2 server3 server4)
+servers=(server1 server2 server3)
 myscripdir="/soft/weblogic122/scripts/logcheck/2.0/"
 logfile1="/logs/domains/dompublicp/wcsites_server/wcsites_server_???.log"
 logfile2="/logs/domains/dompublicp/wcsites_server/wcsites_server_???.out"
@@ -25,7 +25,7 @@ failmail(){
 	setdate
 	echo "$mydate :$1 :Errors in $2 : $3"
 	MSG="$mydate :$1 :Errors in $2 : $3"
-	export CONTENT=`cat fail.html | sed "s)REPLACEME)${MSG})g"`
+	export CONTENT=`cat ${myscripdir}fail.html | sed "s)REPLACEME)${MSG})g"`
 	export SUBJECT="Digital Public site : Failures"
 	echo $CONTENT
 	${myscripdir}failmail.sh
@@ -34,7 +34,10 @@ failmail(){
 
 alivemail(){
         setdate
-        echo "$mydate : Sending Alive mail"
+	cp ${myscripdir}alive.html.org ${myscripdir}alive.html
+        #echo "$mydate : Sending Alive mail"
+	MSG2=`tail -n13 ${myscripdir}main.log| sed ':a;N;$!ba;s/\n/<br>/g'`
+	export CONTENT=`cat ${myscripdir}alive.html |sed "s)REPLACEME)${MSG2})g"`
         ${myscripdir}alivemail.sh 2>&1 >> ${myscripdir}alivemail.log
 }
 
@@ -67,18 +70,17 @@ checklogsfunction(){
                 failmail $i "$1" "$2"
                 exit
         fi
-        echo "$mydate :$i $1 :count $logout ->is ok"
+        echo "$mydate :$i $1 :count $logout -is ok"
 
 }
 
 #
 #main
 logrotate
-alivemail
 for i in ${servers[@]}
 do
 	checklogsfunction "$logfile1" "$string1" 2000 0
 	checklogsfunction "$logfile2" "$string1" 2000 0
-	checklogsfunction "$logfile3" "$string2" 20000 1000
+	checklogsfunction "$logfile3" "$string2" +1 1000
 done
-
+alivemail
